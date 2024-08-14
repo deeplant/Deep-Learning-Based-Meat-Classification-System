@@ -5,14 +5,17 @@
         "momentum":0.9,
         "weight_decay":5e-4,
         "seed":42,
-        "save_model":true,
         "cross_validation":5
     },
     "models":{
         "model_name":"vit_base_r50_s16_224.orig_in21k",
-        "base_model":"default_base_model",
-        "mlp":"default_mlp",
+        "model_file":"default_ViT_model",
+        "load_model":false,
+        "model_version":null,
+        "save_model":false,
+        "save_name":null,
         "num_classes":0,
+        "out_dim":5,
         "pretrained":true,
         "in_chans":3
     },
