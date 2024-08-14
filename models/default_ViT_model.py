@@ -14,55 +14,42 @@ class BaseModel(nn.Module):
     
 
 class MLP_layer(nn.Module):
-    def __init__(self, base_model):
+    def __init__(self, base_model, out_dim):
         super().__init__()
         self.base_model = base_model
-        self.num_features = self.base_model.num_features
+        self.out_dim = out_dim
 
-        # 마블링, 조직감, 기호도를 위한 MLP
-        self.marbling_texture_total = nn.Sequential(
-            nn.Linear(self.num_features, 256),
-            nn.ReLU(),
-            nn.Linear(256, 3)
-        )
-        
-        # 표면육즙을 위한 MLP
-        self.moisture_head = nn.Sequential(
-            nn.Linear(self.num_features, 64),
-            nn.ReLU(),
-            nn.Linear(64, 1)
-        )
-        
-        # 색깔을 위한 MLP
-        self.color_head = nn.Sequential(
-            nn.Linear(self.num_features, 64),
-            nn.ReLU(),
-            nn.Linear(64, 1)
-        )
-        
+        if out_dim > 0:
+            self.num_features = self.base_model.num_features
+            
+            # out_dim 개수만큼 MLP 생성
+            self.mlp_heads = nn.ModuleList([
+                nn.Sequential(
+                    nn.Linear(self.num_features, 64),
+                    nn.ReLU(),
+                    nn.Linear(64, 1)
+                ) for _ in range(out_dim)
+            ])
+        else:
+            self.mlp_heads = None
+
     def forward(self, x):
         base_output = self.base_model(x)
         
-        features = base_output
+        if self.out_dim > 0:
+            features = base_output
 
-        marbling_texture_total = self.marbling_texture_total(features)
-        moisture = self.moisture_head(features)
-        color = self.color_head(features)
-        
-        # 원래의 라벨 순서대로 출력을 결합
-        return torch.cat([
-            marbling_texture_total[:, 0:1],  # 마블링
-            color,  # 색깔
-            marbling_texture_total[:, 1:2],  # 조직감
-            moisture,  # 표면육즙
-            marbling_texture_total[:, 2:3]  # 기호도
-        ], dim=1)
+            outputs = [head(features) for head in self.mlp_heads]
+            return torch.cat(outputs, dim=1)
+        else:
+            
+            return base_output
     
 
 def create_model(model_name, pretrained, num_classes, in_chans, out_dim):
 
-    if out_dim != 5:
-        raise ValueError("out_dim must be exactly 5 for this model")
+    if out_dim <= 0:
+        print("분류 작업 진행: out_dim이 0 이하입니다.")
 
     base_model = BaseModel(model_name, pretrained, num_classes, in_chans)
     model = MLP_layer(base_model)
