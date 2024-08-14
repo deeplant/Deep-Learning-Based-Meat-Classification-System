@@ -1,5 +1,4 @@
 # 이미지, 라벨 매칭된 데이터셋 반환하는 코드
-# dataloader까지 반환할지 dataset까지 반환할지는 생각중
 
 ####### 예제 코드 #######
 class MeatDataset(Dataset):

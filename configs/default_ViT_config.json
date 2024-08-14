@@ -21,6 +21,7 @@
     },
     "datasets":[
         {
+            "input_column": ["image_path"],
             "train_transform":{
                 "RandomRotation":[-45,45],
                 "Resize":256,
