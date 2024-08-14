@@ -52,6 +52,6 @@ def create_model(model_name, pretrained, num_classes, in_chans, out_dim):
         print("분류 작업 진행: out_dim이 0 이하입니다.")
 
     base_model = BaseModel(model_name, pretrained, num_classes, in_chans)
-    model = MLP_layer(base_model)
+    model = MLP_layer(base_model, out_dim)
 
     return model
