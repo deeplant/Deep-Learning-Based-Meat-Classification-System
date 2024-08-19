@@ -1,5 +1,10 @@
 # 이미지, 라벨 매칭된 데이터셋 반환하는 코드
 
+from torch.utils.data import Dataset
+import torch
+from PIL import Image
+from torchvision.transforms.functional import vflip
+
 ####### 예제 코드 #######
 class MeatDataset(Dataset):
     def __init__(self, dataframe, transform=None):
