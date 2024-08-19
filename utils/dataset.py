@@ -7,7 +7,7 @@ from torchvision.transforms.functional import vflip
 
 ####### 예제 코드 #######
 class MeatDataset(Dataset):
-    def __init__(self, dataframe, transform=None):
+    def __init__(self, dataframe, config, transform=None):
         self.dataframe = dataframe
         self.transform = transform
 

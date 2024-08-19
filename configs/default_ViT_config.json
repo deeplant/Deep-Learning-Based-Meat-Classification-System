@@ -1,7 +1,7 @@
 {
     "experiment":"test",
     "run":"test",
-    
+
     "hyperparameters":{
         "num_workers":4,
         "learning_rate":1e-5,
@@ -25,7 +25,7 @@
     },
     "datasets":[
         {
-            "input_column": ["image_path"],
+            "input_columns": ["image_path"],
             "train_transform":{
                 "RandomRotation":[-45,45],
                 "Resize":256,
