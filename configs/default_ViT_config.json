@@ -9,7 +9,8 @@
         "momentum":0.9,
         "weight_decay":5e-4,
         "epochs":20,
-        "seed":42
+        "seed":42,
+        "cross_validaton":0
     },
     "models":{
         "model_name":"vit_base_r50_s16_224.orig_in21k",

@@ -3,6 +3,8 @@
 import argparse
 import json
 import torch
+import pandas as pd
+from utils.split_data import split_data
 
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
@@ -19,6 +21,7 @@ argparser.add_argument('--lr', '--learning_rate', type=float)  # learning rate
 argparser.add_argument('--batch_size', type=int)
 argparser.add_argument('--num_workers', type=int)
 argparser.add_argument('--csv_path', default='./dataset/labels/default.csv')
+argparser.add_argument('--seed', type=int)
 
 args=argparser.parse_args()
 
@@ -32,12 +35,28 @@ args.epochs = args.epochs if args.epochs is not None else config['hyperparameter
 args.lr = args.lr if args.lr is not None else config['hyperparameters'].get('learning_rate', 1e-5)
 args.batch_size = args.batch_size if args.batch_size is not None else config['hyperparameters'].get('batch_size', 32)
 args.num_workers = args.num_workers if args.num_workers is not None else config['hyperparameters'].get('num_workers', 4)
+args.seed = args.seed if args.seed is not None else config['hyperparameters'].get('seed', 42)
+
+experiment = args.experiment
+run = args.run
+save_model = args.save_model
+epochs = args.epochs
+lr = args.lr
+batch_size = args.batch_size
+num_workers = args.num_workers
+seed = args.seed
+
+csv = pd.read_csv(args.csv_path)
+output_columns = config['output_columns']
+print(output_columns)
+
+split_data(csv, output_columns, cross_validation=0)
 
 
-print(f"Run name: {args.run}")
-print(f"Experiment name: {args.experiment}")
-print(f"Save model: {args.save_model}")
-print(f"Number of epochs: {args.epochs}")
-print(f"Learning rate: {args.lr}")
-print(f"Batch size: {args.batch_size}")
-print(f"Number of workers: {args.num_workers}")
+# print(f"Run name: {args.run}")
+# print(f"Experiment name: {args.experiment}")
+# print(f"Save model: {args.save_model}")
+# print(f"Number of epochs: {args.epochs}")
+# print(f"Learning rate: {args.lr}")
+# print(f"Batch size: {args.batch_size}")
+# print(f"Number of workers: {args.num_workers}")
