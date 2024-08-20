@@ -33,7 +33,10 @@
                 "RandomHorizontalFlip":0.5,
                 "RandomVerticalFlip":null,
                 "ToTensor":true,
-                "Normalize":true
+                "Normalize":{
+                    "mean":[0.4834, 0.3656, 0.3474],
+                    "std":[0.2097, 0.2518, 0.2559]
+                }
             },
             "val_transform":{
                 "RandomRotation":null,
@@ -42,7 +45,10 @@
                 "RandomHorizontalFlip":null,
                 "RandomVerticalFlip":null,
                 "ToTensor":true,
-                "Normalize":true
+                "Normalize":{
+                    "mean":[0.4834, 0.3656, 0.3474],
+                    "std":[0.2097, 0.2518, 0.2559]
+                }
             }
         }
     ],
