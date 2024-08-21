@@ -2,12 +2,18 @@
 
 import argparse
 import json
-import torch
 import pandas as pd
 import mlflow
+import torch
+import torch.optim as optim
+import torch.nn as nn
+from torch.optim.lr_scheduler import ReduceLROnPlateau
+from utils.dataset import MeatDataset
+from torch.utils.data import DataLoader
 
 from models.model import make_model
 from utils.split_data import split_data
+from utils.epoch import regression
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 print(device)
@@ -42,6 +48,8 @@ weight_decay = args.weight_decay if args.weight_decay is not None else config['h
 num_workers = args.num_workers if args.num_workers is not None else config['hyperparameters'].get('num_workers', 4)
 seed = args.seed if args.seed is not None else config['hyperparameters'].get('seed', 42)
 cross_validation = args.cross_validation if args.cross_validation is not None else config['hyperparameters'].get('cross_validation', 0)
+factor = config['hyperparameters'].get('factor', 0.3)
+patience = config['hyperparameters'].get('patience', 2)
 
 
 csv = pd.read_csv(args.csv_path)
@@ -72,11 +80,11 @@ with mlflow.start_run(run_name=run) as run:
         'optimizer':None,
         'train_dl':None,
         'val_dl':None,
-        'lr_scheduler':None,
+        'scheduler':None,
         'save_model':save_model,
         'loss_func':None,
-        'optimizer':None,
-        'scheduler':None
+        'fold':(0, 0),
+        'label_names':output_columns
     }
 
 
@@ -92,7 +100,12 @@ with mlflow.start_run(run_name=run) as run:
         print("="*50 + "\n")
 
 
-    for folds in range(n_folds):
+    for fold in range(n_folds):
+        val_data = fold_data[fold]
+        train_data = pd.concat([fold_data[i] for i in range(n_folds) if i != fold])
+        val_dataset = MeatDataset(val_data, config, is_train=False)
+        train_dataset = MeatDataset(train_data, config, is_train=True)
+
         model = make_model(config)
         model = model.to(device)
 
@@ -103,12 +116,19 @@ with mlflow.start_run(run_name=run) as run:
 
         # datadist?
 
+        params_train['optimizer'] = optim.Adam(model.parameters(), lr = lr, weight_decay=weight_decay)
+        params_train['scheduler'] = scheduler = ReduceLROnPlateau(params_train['optimizer'], mode='min', factor=factor, patience=patience, verbose=True)
+        params_train['train_dl'] = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, num_workers=num_workers, pin_memory=True)
+        params_train['val_dl'] = DataLoader(val_dataset, batch_size=batch_size, shuffle=False, num_workers=num_workers, pin_memory=True)
 
 
+        ## Regression
+        params_train['loss_func'] = nn.MSELoss()
 
+        if cross_validation:
+            params_train['fold'] = (fold + 1, cross_validation)
 
-
-
+        regression(model, params_train)
 
 
 # print(f"Run name: {args.run}")
