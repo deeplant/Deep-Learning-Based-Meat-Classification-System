@@ -4,8 +4,10 @@ import argparse
 import json
 import torch
 import pandas as pd
-from utils.split_data import split_data
+import mlflow
 
+from models.model import make_model
+from utils.split_data import split_data
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 print(device)
@@ -19,6 +21,7 @@ argparser.add_argument('--save_model', action='store_true')  # 모델 저장
 argparser.add_argument('--epochs', type=int)  #epochs
 argparser.add_argument('--lr', '--learning_rate', type=float)  # learning rate
 argparser.add_argument('--batch_size', type=int)
+argparser.add_argument('--weight_decay', type=float)
 argparser.add_argument('--num_workers', type=int)
 argparser.add_argument('--csv_path', default='./dataset/labels/default.csv')
 argparser.add_argument('--seed', type=int)
@@ -29,31 +32,81 @@ args=argparser.parse_args()
 with open(args.config, 'r') as json_file:
     config = json.load(json_file)
 
-args.experiment = args.experiment if args.experiment is not False else config.get('experiment', 'test')
-args.run = args.run if args.run is not False else config.get('run', 'test')
-args.save_model = args.save_model if args.save_model is not False else config['models'].get('save_model', False)
-args.epochs = args.epochs if args.epochs is not None else config['hyperparameters'].get('epochs', 20)
-args.lr = args.lr if args.lr is not None else config['hyperparameters'].get('learning_rate', 1e-5)
-args.batch_size = args.batch_size if args.batch_size is not None else config['hyperparameters'].get('batch_size', 32)
-args.num_workers = args.num_workers if args.num_workers is not None else config['hyperparameters'].get('num_workers', 4)
-args.seed = args.seed if args.seed is not None else config['hyperparameters'].get('seed', 42)
-args.cross_validation = args.cross_validation if args.cross_validation is not None else config['hyperparameters'].get('cross_validation', 0)
+experiment = args.experiment if args.experiment is not False else config.get('experiment', 'test')
+run = args.run if args.run is not False else config.get('run', 'test')
+save_model = args.save_model if args.save_model is not False else config['models'].get('save_model', False)
+epochs = args.epochs if args.epochs is not None else config['hyperparameters'].get('epochs', 20)
+lr = args.lr if args.lr is not None else config['hyperparameters'].get('learning_rate', 1e-5)
+batch_size = args.batch_size if args.batch_size is not None else config['hyperparameters'].get('batch_size', 32)
+weight_decay = args.weight_decay if args.weight_decay is not None else config['hyperparameters'].get('weight_decay', 5e-4)
+num_workers = args.num_workers if args.num_workers is not None else config['hyperparameters'].get('num_workers', 4)
+seed = args.seed if args.seed is not None else config['hyperparameters'].get('seed', 42)
+cross_validation = args.cross_validation if args.cross_validation is not None else config['hyperparameters'].get('cross_validation', 0)
 
-experiment = args.experiment
-run = args.run
-save_model = args.save_model
-epochs = args.epochs
-lr = args.lr
-batch_size = args.batch_size
-num_workers = args.num_workers
-seed = args.seed
-cross_validation = args.cross_validation
 
 csv = pd.read_csv(args.csv_path)
 output_columns = config['output_columns']
 print(output_columns)
 
 fold_data = split_data(csv, output_columns, cross_validation)
+
+
+###############################################################################################################
+# train
+
+# mlflow 설정
+mlflow.set_tracking_uri('')
+mlflow.set_experiment(experiment)
+
+# mlflow를 시작 
+with mlflow.start_run(run_name=run) as run:
+    print(run.info.run_id)
+    mlflow.log_dict(config, 'config/configs.json')
+    mlflow.log_param("model", config["models"].get('model_name', 'null'))
+    mlflow.log_param("learning_rate", lr)
+    mlflow.log_param("batch_size", batch_size)
+    mlflow.log_param("weight_decay", weight_decay)
+
+    params_train = {
+        'num_epochs':epochs,
+        'optimizer':None,
+        'train_dl':None,
+        'val_dl':None,
+        'lr_scheduler':None,
+        'save_model':save_model,
+        'loss_func':None,
+        'optimizer':None,
+        'scheduler':None
+    }
+
+
+    if cross_validation:
+        n_folds = cross_validation
+        print("\n" + "="*50)
+        print(f"     K-Fold Cross Validation (K={n_folds}) Enabled")
+        print("="*50 + "\n")
+    else:
+        n_folds = 1
+        print("\n" + "="*50)
+        print("     Single Fold Training")
+        print("="*50 + "\n")
+
+
+    for folds in range(n_folds):
+        model = make_model(config)
+        model = model.to(device)
+
+        # algorithm?
+
+        total_params = sum(p.numel() for p in model.parameters())
+        mlflow.log_param("total_params", total_params)
+
+        # datadist?
+
+
+
+
+
 
 
 
