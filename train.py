@@ -22,6 +22,7 @@ argparser.add_argument('--batch_size', type=int)
 argparser.add_argument('--num_workers', type=int)
 argparser.add_argument('--csv_path', default='./dataset/labels/default.csv')
 argparser.add_argument('--seed', type=int)
+argparser.add_argument('--cross_validation', type=int)
 
 args=argparser.parse_args()
 
@@ -36,6 +37,7 @@ args.lr = args.lr if args.lr is not None else config['hyperparameters'].get('lea
 args.batch_size = args.batch_size if args.batch_size is not None else config['hyperparameters'].get('batch_size', 32)
 args.num_workers = args.num_workers if args.num_workers is not None else config['hyperparameters'].get('num_workers', 4)
 args.seed = args.seed if args.seed is not None else config['hyperparameters'].get('seed', 42)
+args.cross_validation = args.cross_validation if args.cross_validation is not None else config['hyperparameters'].get('cross_validation', 0)
 
 experiment = args.experiment
 run = args.run
@@ -45,12 +47,15 @@ lr = args.lr
 batch_size = args.batch_size
 num_workers = args.num_workers
 seed = args.seed
+cross_validation = args.cross_validation
 
 csv = pd.read_csv(args.csv_path)
 output_columns = config['output_columns']
 print(output_columns)
 
-split_data(csv, output_columns, cross_validation=0)
+fold_data = split_data(csv, output_columns, cross_validation)
+
+
 
 
 # print(f"Run name: {args.run}")
