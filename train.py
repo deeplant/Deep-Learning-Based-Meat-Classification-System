@@ -102,7 +102,7 @@ with mlflow.start_run(run_name=run) as run:
 
     for fold in range(n_folds):
         val_data = fold_data[fold]
-        train_data = pd.concat([fold_data[i] for i in range(n_folds) if i != fold])
+        train_data = pd.concat([fold_data[i] for i in range(len(fold_data)) if i != fold])
         val_dataset = MeatDataset(val_data, config, is_train=False)
         train_dataset = MeatDataset(train_data, config, is_train=True)
 

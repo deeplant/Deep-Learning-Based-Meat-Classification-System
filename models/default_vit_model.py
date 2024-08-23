@@ -20,7 +20,7 @@ class MLP_layer(nn.Module):
         self.out_dim = out_dim
 
         if out_dim > 0:
-            self.num_features = self.base_model.num_features
+            self.num_features = self.base_model.base_model.num_features
             
             # out_dim 개수만큼 MLP 생성
             self.mlp_heads = nn.ModuleList([

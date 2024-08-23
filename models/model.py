@@ -1,7 +1,7 @@
-import torch
 import importlib
 import mlflow
 import mlflow.pyfunc
+import os
 
 def make_model(config):
 
@@ -17,7 +17,7 @@ def make_model(config):
     in_chans = model_cfg['in_chans']
 
     if not load_model :
-        module = importlib.import_module(model_file)
+        module = importlib.import_module(f'models.{model_file}')
         model = module.create_model(model_name, pretrained, num_classes, in_chans, out_dim)
     
     else :

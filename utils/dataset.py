@@ -5,6 +5,7 @@ import torch
 from PIL import Image
 import torchvision.transforms.functional as TF
 from utils.transform import create_transform
+import numpy as np
 
 
 class MeatDataset(Dataset):
@@ -42,11 +43,11 @@ class MeatDataset(Dataset):
             if row.get('is_flipped', False):
                 image = TF.vflip(image)
             
-            image = TF.to_tensor(image)
-            images.append(image)
+            images.append(np.array(image))
         
-        # 같은 input_columns 내의 이미지들을 채널 차원으로 연결
-        combined_image = torch.cat(images, dim=0)
+        # 이미지들을 numpy 배열로 결합 (채널 방향으로)
+        combined_image = np.concatenate(images, axis=2)
+        combined_image = Image.fromarray(combined_image)
         
         if transform:
             combined_image = transform(combined_image)
