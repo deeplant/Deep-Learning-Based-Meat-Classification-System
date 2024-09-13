@@ -21,14 +21,14 @@ argparser=argparse.ArgumentParser(description='training pipeline')
 
 argparser.add_argument('--experiment', default ='test', type=str)  # experiment 이름 설정
 argparser.add_argument('--run', default ='test', type=str)  # run 이름 설정
-argparser.add_argument('--config', default="./configs/default_vit_config.json", type=str)  # model config 파일 경로 설정
+argparser.add_argument('--config', default="./configs/default_ViT_config.json", type=str)  # model config 파일 경로 설정
 argparser.add_argument('--save_model', action='store_true')  # 모델 저장
 argparser.add_argument('--epochs', type=int)  #epochs
 argparser.add_argument('--lr', '--learning_rate', type=float)  # learning rate
 argparser.add_argument('--batch_size', type=int)
 argparser.add_argument('--weight_decay', type=float)
 argparser.add_argument('--num_workers', type=int)
-argparser.add_argument('--csv_path', default='./dataset/labels/default.csv')
+argparser.add_argument('--csv_path', default='./dataset/default.csv')
 argparser.add_argument('--seed', type=int)
 argparser.add_argument('--cross_validation', type=int)
 
@@ -38,7 +38,7 @@ with open(args.config, 'r') as json_file:
     config = json.load(json_file)
 
 experiment = args.experiment if args.experiment is not False else config.get('experiment', 'test')
-run = args.run if args.run is not False else config.get('run', 'test')
+run_name = args.run if args.run is not False else config.get('run', 'test')
 save_model = args.save_model if args.save_model is not False else config['models'].get('save_model', False)
 epochs = args.epochs if args.epochs is not None else config['hyperparameters'].get('epochs', 20)
 lr = args.lr if args.lr is not None else config['hyperparameters'].get('learning_rate', 1e-5)
@@ -62,7 +62,7 @@ fold_data = split_data(csv, output_columns, cross_validation)
 # train
 
 # mlflow 설정
-mlflow.set_tracking_uri('')
+mlflow.set_tracking_uri('http://0.0.0.0:포트')
 mlflow.set_experiment(experiment)
 
 if cross_validation:
@@ -92,9 +92,11 @@ params_train = {
 all_fold_results = []
 for fold in range(n_folds):
     if cross_validation:
-        run = run + " fold " + str(fold+1)
+        r = run_name + " fold " + str(fold+1)
+    else:
+        r = run_name
 
-    with mlflow.start_run(run_name=run) as run:
+    with mlflow.start_run(run_name=r) as run:
         print(run.info.run_id)
         mlflow.log_dict(config, 'config/configs.json')
         mlflow.log_param("model", config["models"].get('model_name', 'null'))
