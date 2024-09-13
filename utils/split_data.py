@@ -45,6 +45,7 @@ def split_data(csv, output_columns, cross_validation=0, flip_grade='등심3'):
 
 
 def add_flipped_images_to_dataset(df, grade='등심3'):
+    original_grade_count = len(df[df['grade'] == grade])
     flipped_rows = []
     
     for _, row in df[df['grade'] == grade].iterrows():
@@ -55,6 +56,8 @@ def add_flipped_images_to_dataset(df, grade='등심3'):
     df_flipped = pd.DataFrame(flipped_rows)
     df = pd.concat([df, df_flipped], ignore_index=True)
     
-    print(f"Added flipped images for {grade}. Original count: {len(df) - len(flipped_rows)}, New total: {len(df)}")
+    new_grade_count = len(df[df['grade'] == grade])
+    
+    print(f"Added flipped images for {grade}. Original count: {original_grade_count}, New total for {grade}: {new_grade_count}")
     
     return df
