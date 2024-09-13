@@ -58,12 +58,3 @@ def add_flipped_images_to_dataset(df, grade='등심3'):
     print(f"Added flipped images for {grade}. Original count: {len(df) - len(flipped_rows)}, New total: {len(df)}")
     
     return df
-
-    # if cross_validation == 0:
-    #     # Train set (4개 폴드 결합)
-    #     train_data = pd.concat(fold_data[:4], axis=0).reset_index(drop=True)
-    #     # Validation set (1개 폴드)
-    #     val_data = fold_data[4].reset_index(drop=True)
-    #     return train_data, val_data
-    # else:
-    #     return fold_data

@@ -1,7 +1,6 @@
 import importlib
 import mlflow
 import mlflow.pyfunc
-import os
 
 def make_model(config):
 
