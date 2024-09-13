@@ -4,7 +4,7 @@
 from tqdm import tqdm
 import torch
 import numpy as np
-from sklearn.metrics import accuracy_score, r2_score
+from sklearn.metrics import r2_score
 import mlflow
 
 def regression(model, params):

@@ -1,5 +1,3 @@
-# 학습 코드 작성
-
 import argparse
 import json
 import pandas as pd
@@ -14,6 +12,7 @@ from torch.utils.data import DataLoader
 from models.model import make_model
 from utils.split_data import split_data
 from utils.epoch import regression
+from utils.log import log
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 print(device)
@@ -111,12 +110,8 @@ for fold in range(n_folds):
         model = make_model(config)
         model = model.to(device)
 
-        # algorithm?
-
         total_params = sum(p.numel() for p in model.parameters())
         mlflow.log_param("total_params", total_params)
-
-        # datadist?
 
         params_train['optimizer'] = optim.Adam(model.parameters(), lr = lr, weight_decay=weight_decay)
         params_train['scheduler'] = scheduler = ReduceLROnPlateau(params_train['optimizer'], mode='min', factor=factor, patience=patience, verbose=True)
@@ -133,3 +128,6 @@ for fold in range(n_folds):
         fold_result = regression(model, params_train)
 
         all_fold_results.append(fold_result)
+
+        if fold + 1 == n_folds:
+            log(all_fold_results, cross_validation, params_train['label_names'])
