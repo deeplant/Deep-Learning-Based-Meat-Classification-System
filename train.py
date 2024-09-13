@@ -66,41 +66,43 @@ fold_data = split_data(csv, output_columns, cross_validation)
 mlflow.set_tracking_uri('')
 mlflow.set_experiment(experiment)
 
-# mlflow를 시작 
-with mlflow.start_run(run_name=run) as run:
-    print(run.info.run_id)
-    mlflow.log_dict(config, 'config/configs.json')
-    mlflow.log_param("model", config["models"].get('model_name', 'null'))
-    mlflow.log_param("learning_rate", lr)
-    mlflow.log_param("batch_size", batch_size)
-    mlflow.log_param("weight_decay", weight_decay)
-
-    params_train = {
-        'num_epochs':epochs,
-        'optimizer':None,
-        'train_dl':None,
-        'val_dl':None,
-        'scheduler':None,
-        'save_model':save_model,
-        'loss_func':None,
-        'fold':(0, 0),
-        'label_names':output_columns
-    }
+if cross_validation:
+    n_folds = cross_validation
+    print("\n" + "="*50)
+    print(f"     K-Fold Cross Validation (K={n_folds}) Enabled")
+    print("="*50 + "\n")
+else:
+    n_folds = 1
+    print("\n" + "="*50)
+    print("     Single Fold Training")
+    print("="*50 + "\n")
 
 
+params_train = {
+    'num_epochs':epochs,
+    'optimizer':None,
+    'train_dl':None,
+    'val_dl':None,
+    'scheduler':None,
+    'save_model':save_model,
+    'loss_func':None,
+    'fold':(0, 0),
+    'label_names':output_columns
+}
+
+all_fold_results = []
+for fold in range(n_folds):
     if cross_validation:
-        n_folds = cross_validation
-        print("\n" + "="*50)
-        print(f"     K-Fold Cross Validation (K={n_folds}) Enabled")
-        print("="*50 + "\n")
-    else:
-        n_folds = 1
-        print("\n" + "="*50)
-        print("     Single Fold Training")
-        print("="*50 + "\n")
+        run = run + " fold " + str(fold+1)
 
-
-    for fold in range(n_folds):
+    with mlflow.start_run(run_name=run) as run:
+        print(run.info.run_id)
+        mlflow.log_dict(config, 'config/configs.json')
+        mlflow.log_param("model", config["models"].get('model_name', 'null'))
+        mlflow.log_param("learning_rate", lr)
+        mlflow.log_param("batch_size", batch_size)
+        mlflow.log_param("weight_decay", weight_decay)    
+    
         val_data = fold_data[fold]
         train_data = pd.concat([fold_data[i] for i in range(len(fold_data)) if i != fold])
         val_dataset = MeatDataset(val_data, config, is_train=False)
@@ -128,13 +130,6 @@ with mlflow.start_run(run_name=run) as run:
         if cross_validation:
             params_train['fold'] = (fold + 1, cross_validation)
 
-        regression(model, params_train)
+        fold_result = regression(model, params_train)
 
-
-# print(f"Run name: {args.run}")
-# print(f"Experiment name: {args.experiment}")
-# print(f"Save model: {args.save_model}")
-# print(f"Number of epochs: {args.epochs}")
-# print(f"Learning rate: {args.lr}")
-# print(f"Batch size: {args.batch_size}")
-# print(f"Number of workers: {args.num_workers}")
+        all_fold_results.append(fold_result)

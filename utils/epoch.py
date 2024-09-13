@@ -25,9 +25,7 @@ def regression(model, params):
     val_losses = []
     train_r2 = []
     val_r2 = []
-    train_acc = []
     val_acc = []
-    average_train_acc = []
     average_val_acc = []
 
     for epoch in range(num_epochs):
@@ -63,10 +61,8 @@ def regression(model, params):
         train_accuracies = calculate_accuracy(all_labels, all_outputs)
         average_train_accuracies = np.mean(train_accuracies)
 
-        #train_losses.append(train_loss) # epoch마다 train loss 저장
-        #train_acc.append(train_accuracies) # epoch마다 각 라벨의 정확도 저장
-        #average_train_acc.append(average_train_accuracies) # epoch마다 평균 정확도 저장
-        #train_r2.append(train_r2_value) # epoch마다 r2 score 저장
+        train_losses.append(train_loss) # epoch마다 train loss 저장
+        train_r2.append(train_r2_value) # epoch마다 r2 score 저장
 
         mlflow.log_metric('train_loss', train_loss, step=epoch+1) # mlflow에 train loss 기록
         mlflow.log_metric('train_R2', train_r2_value, step=epoch+1) # mlflow에 train R2 기록
@@ -117,10 +113,10 @@ def regression(model, params):
                 best_val_loss = val_loss
                 mlflow.pytorch.log_model(model, "best_model")
 
-            #val_losses.append(val_loss)
-            #val_r2.append(val_r2_value)
-            #val_acc.append(val_accuracies)
-            #average_val_acc.append(average_val_accuracies)
+            val_losses.append(val_loss)
+            val_r2.append(val_r2_value)
+            val_acc.append(val_accuracies)
+            average_val_acc.append(average_val_accuracies)
 
             print(f"\nValidation Results:")
             if fold:
@@ -130,6 +126,8 @@ def regression(model, params):
             print(f"Validation R2: {val_r2_value:.3f}")
             print(f"Validation Accuracies: {val_accuracies}")
             print(f"Average Validation Accuracy: {average_val_accuracies:.3f}")
+
+    return [train_losses, train_r2, val_losses, val_r2, val_acc, average_val_acc]
 
 
 
