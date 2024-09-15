@@ -8,6 +8,8 @@ import torch.nn as nn
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 from utils.dataset import MeatDataset
 from torch.utils.data import DataLoader
+import random
+import numpy as np
 
 from models.model import make_model
 from utils.split_data import split_data
@@ -50,6 +52,9 @@ cross_validation = args.cross_validation if args.cross_validation is not None el
 factor = config['hyperparameters'].get('factor', 0.3)
 patience = config['hyperparameters'].get('patience', 2)
 
+random.seed(seed)
+np.random.seed(seed)
+torch.manual_seed(seed)
 
 csv = pd.read_csv(args.csv_path)
 output_columns = config['output_columns']
@@ -58,7 +63,7 @@ print(output_columns)
 fold_data = split_data(csv, output_columns, cross_validation)
 
 
-###############################################################################################################
+##########################################################################################################################################
 # train
 
 # mlflow 설정
@@ -117,7 +122,7 @@ for fold in range(n_folds):
 
         params_train['optimizer'] = optim.Adam(model.parameters(), lr = lr, weight_decay=weight_decay)
         params_train['scheduler'] = scheduler = ReduceLROnPlateau(params_train['optimizer'], mode='min', factor=factor, patience=patience, verbose=True)
-        params_train['train_dl'] = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, num_workers=num_workers, pin_memory=True)
+        params_train['train_dl'] = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, num_workers=num_workers, pin_memory=True, seed = seed)
         params_train['val_dl'] = DataLoader(val_dataset, batch_size=batch_size, shuffle=False, num_workers=num_workers, pin_memory=True)
 
 
