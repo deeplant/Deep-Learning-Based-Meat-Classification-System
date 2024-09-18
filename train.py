@@ -33,6 +33,7 @@ argparser.add_argument('--num_workers', type=int) # 서브 프로세스 개수 (
 argparser.add_argument('--csv_path', default='./dataset/default.csv') # csv 경로
 argparser.add_argument('--seed', type=int) # 랜덤 시드
 argparser.add_argument('--cross_validation', type=int) # k-fold-cross-validation. 0: 비활성화, 2이상: k-fold 활성화 및 fold 개수 지정
+argparser.add_argument('--port', type=int) # 포트 설정
 
 args=argparser.parse_args()
 
@@ -52,6 +53,7 @@ seed = args.seed if args.seed is not None else config['hyperparameters'].get('se
 cross_validation = args.cross_validation if args.cross_validation is not None else config['hyperparameters'].get('cross_validation', 0)
 factor = config['hyperparameters'].get('factor', 0.3)
 patience = config['hyperparameters'].get('patience', 2)
+port = args.port if args.port is not None else 5000
 
 # 랜덤 시드 설정
 random.seed(seed)
@@ -71,7 +73,7 @@ fold_data = split_data(csv, output_columns, cross_validation)
 # train
 
 # mlflow 설정
-mlflow.set_tracking_uri('http://0.0.0.0:포트')
+mlflow.set_tracking_uri('http://0.0.0.0:'+str(port))
 mlflow.set_experiment(experiment)
 
 if cross_validation:

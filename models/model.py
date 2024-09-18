@@ -20,9 +20,8 @@ def make_model(config):
         model = module.create_model(model_name, pretrained, num_classes, in_chans, out_dim)
     
     else :
-        mlflow.set_tracking_uri("uri 설정")
         model_uri = f"models:/{model_name}/{model_version}"
-
+        
         try:
             model = mlflow.pytorch.load_model(model_uri)
             print(f"Success to load model")
