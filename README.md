@@ -49,9 +49,6 @@ python train.py --experiment "실험 이름" --run "run 이름"
 1. 특정 configuration file 복사.
 2. 시스템 설명서의 configuration file 설명을 보면서 상황에 맞게 작성.
 
-## Create Custom Loss
-'ml_training/loss/loss.py'에 custom loss 코드 작성 권장.
-
 # 사용 모델
 - ViT
 - CNN
