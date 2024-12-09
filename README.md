@@ -24,7 +24,6 @@ pip install~
 '''
 
 # Quick Start ⚡
-----
 1. clone repository
 '''
 git clone https://github.com/skitw427/20242R0136COSE48002.git
@@ -61,14 +60,16 @@ python train.py --experiment "실험 이름" --run "run 이름"
 
 # 사용 데이터셋
 ## 등급예측
-|Name|Data Type|Range|
-|image src|string||
-|grade|string|1++,1+,1,2,3|
+| Name | Data Type | Range |
+| --- | --- | --- |
+| image src | string |
+| grade | string | 1++,1+,1,2,3 |
 - AI hub에서 제공하는 75000개의 육류 이미지 사용
 
 ## 맛데이터 예측
 |Name|Data Type|Range|
-|image src|string||
+| --- | --- | --- |
+|image src|string|
 |grade|string|1++,1+,1,2,3|
 |color|float|1 ~ 10|
 |marbling|float|1 ~ 10|
@@ -81,15 +82,18 @@ python train.py --experiment "실험 이름" --run "run 이름"
 
 # 결과 및 성능
 ## 육류 등급 예측
-|Models|# of Params|Accuracy|
-|vit_base_r50_s16_224.orig_in21k|97.9M|98.8|
+| Models | # of Params | Accuracy |
+| --- | --- | --- |
+| vit_base_r50_s16_224.orig_in21k | 97.9M | 98.8 |
 
 ## 맛 등급 예측
 |Models|# of Params|R2 Score|Average ACC|
+| --- | --- | --- | --- |
 |vit_base_r50_s16_224.orig_in21k|~|~|
 
 # manage.py start Argument
 |args|용도|
+| --- | --- |
 |run|mlflow 이름 설정|
 |experiment|mlflow experiment 이름 설정|
 |model_cfgs|모델 configuration file 경로 설정|
