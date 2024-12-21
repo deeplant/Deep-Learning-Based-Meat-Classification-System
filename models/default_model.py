@@ -1,3 +1,6 @@
+
+
+# +
 import timm
 import torch
 import torch.nn as nn
@@ -10,8 +13,6 @@ class BaseModel(nn.Module):
     def forward(self, x):
         x = self.base_model(x)
         return x
-
-    
 
 class MLP_layer(nn.Module):
     def __init__(self, base_model, out_dim):
@@ -38,8 +39,8 @@ class MLP_layer(nn.Module):
         outputs = [head(features) for head in self.mlp_heads]
 
         return torch.cat(outputs, dim=1)
-
-def create_model(model_name, pretrained, num_classes, in_chans, out_dim):
+    
+def create_model(model_name, pretrained, num_classes, in_chans, out_dim, config):
 
     if out_dim <= 0:
         raise ValueError("오류: out_dim이 0 이하입니다.")
@@ -48,3 +49,8 @@ def create_model(model_name, pretrained, num_classes, in_chans, out_dim):
     model = MLP_layer(base_model, out_dim)
 
     return model
+# -
+
+
+
+

@@ -63,10 +63,10 @@ class MLP_layer(nn.Module):
         return torch.cat(outputs, dim=1)
 
 # 모델 생성 함수
-def create_model(model_name, pretrained, num_classes, in_chans, out_dim, patch_size=16):
+def create_model(model_name, pretrained, num_classes, in_chans, out_dim, config):
     if out_dim <= 0:
         raise ValueError("오류: out_dim이 0 이하입니다.")
 
-    base_model = BaseModel(model_name, pretrained, num_classes, in_chans, patch_size)
+    base_model = BaseModel(model_name, pretrained, num_classes, in_chans, patch_size=16)
     model = MLP_layer(base_model, out_dim)
     return model

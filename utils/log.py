@@ -4,7 +4,7 @@ import mlflow
 def log(all_fold_results, cross_validation, label_names):
     num_folds = len(all_fold_results)
     num_epochs = len(all_fold_results[0][0])
-    num_labels = len(all_fold_results[0][4][0])
+    num_labels = len(label_names)
 
     train_losses = np.array([fold_result[0] for fold_result in all_fold_results])          # (num_folds, num_epochs)
     train_r2 = np.array([fold_result[1] for fold_result in all_fold_results])              # (num_folds, num_epochs)

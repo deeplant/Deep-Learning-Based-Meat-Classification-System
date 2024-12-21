@@ -1,13 +1,13 @@
 {
-    "experiment": "02_BRIDGING-GAP",
-    "run": "02_1.SOPE-DAFF",
+    "experiment": "1204",
+    "run": "SOPEx_DAFFo_HTx",
     "hyperparameters": {
         "num_workers": 4,
         "learning_rate": 1e-5,
         "batch_size": 32,
         "momentum": 0.9,
         "weight_decay": 5e-4,
-        "epochs": 20,
+        "epochs": 40,
         "seed": 42,
         "cross_validaton": 0,
         "factor": 0.3,
@@ -15,7 +15,7 @@
     },
     "models": {
         "model_name": "vit_base_r50_s16_224.orig_in21k",
-        "model_file": "ViT_SOPE_DAFF",
+        "model_file": "ViT_NoSOPE_DAFF_NoHT",
         "load_model": false,
         "model_version": null,
         "save_model": false,

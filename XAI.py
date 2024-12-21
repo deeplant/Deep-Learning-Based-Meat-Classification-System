@@ -8,17 +8,34 @@ import mlflow
 from torchvision.transforms import Compose, Resize, CenterCrop, ToTensor, Normalize
 
 # +
-# 필요한 변수 설정
-mlflow.set_tracking_uri("http://0.0.0.0:5000")  # MLflow Tracking URI 설정 (필요에 따라 수정)
-run_id = "d126304ab4ed4859b20332c3b801a33b"
-model_uri = f"runs:/{run_id}/best_model"
-model_path = '../../regression'
-model = mlflow.pytorch.load_model(model_path)
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-model = model.to(device)
+# # 필요한 변수 설정
+# mlflow.set_tracking_uri("http://0.0.0.0:5000")  # MLflow Tracking URI 설정 (필요에 따라 수정)
+# run_id = "e205573782d94b6a8bac9194ac14f2ae"
+# model_uri = f"runs:/{run_id}/best_model"
+# model = mlflow.pytorch.load_model(model_uri)
+# device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+# model = model.to(device)
+
+# print(model)
+
+# +
+import mlflow.pyfunc
+import torch
+
+mlflow.set_tracking_uri("http://0.0.0.0:5000")
+
+model_name = "Classification Model"  # 등록된 모델 이름
+model_version = 1  # 버전 번호
+
+model_uri = f"models:/{model_name}/{model_version}"
+
+model = mlflow.pytorch.load_model(model_uri)
 
 print(model)
 # -
+
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+model = model.to(device)
 
 mean=[0.4834, 0.3656, 0.3474] # 데이터셋의 mean과 std
 std=[0.2097, 0.2518, 0.2559]
@@ -42,7 +59,7 @@ def my_forward_wrapper(attn_obj):
         return x
     return my_forward
 
-for block in model.base_model.blocks:
+for block in model.blocks:
     block.attn.forward = my_forward_wrapper(block.attn)
 
 # 전처리 함수
@@ -51,7 +68,7 @@ def preprocess_image(image_path):
         Resize(256),
         CenterCrop(224),
         ToTensor(),
-        #transforms.Normalize(mean=mean, std=std)
+        transforms.Normalize(mean=mean, std=std)
     ])
     image = Image.open(image_path)
     return transform(image).unsqueeze(0)
@@ -70,11 +87,12 @@ def get_all_attention_maps(model, image_path):
         cls_weights.append(attn[:, :, 0, 1:].mean(dim=1).view(14, 14))
     
     hooks = []
-    for block in model.base_model.blocks:
+    for block in model.blocks:
         hooks.append(block.attn.register_forward_hook(hook_fn))
     
     with torch.no_grad():
         output = model(input_tensor)
+        print(output)
     
     for hook in hooks:
         hook.remove()
@@ -148,7 +166,8 @@ def visualize_all_attention_layers(image_path, model, threshold=0.5):
     plt.show()
 
 # 실행
-visualize_all_attention_layers('./dataset/meat_dataset/20240924/240924_개체사진/240924_(10).JPG', model, threshold=0.5)
+visualize_all_attention_layers('./dataset/meat_dataset/20240924/240924_개체사진/240924_(11).JPG', model, threshold=0.5)
+#visualize_all_attention_layers('./dataset/meat_dataset/등심1++/등심1++_000123.jpg', model, threshold=0.5)
 
 # +
 # 모든 어텐션 레이어 시각화

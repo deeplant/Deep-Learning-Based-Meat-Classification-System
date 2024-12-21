@@ -76,40 +76,6 @@ class BaseModel(nn.Module):
         self.global_pool = SelectAdaptivePool2d()
 
     def forward(self, x, m):
-        # # 패치 임베딩
-        # x = self.base_model.patch_embed(x)
-
-        # # 클래스 토큰 추가
-        # batch_size = x.shape[0]
-        # cls_token = self.base_model.cls_token.expand(batch_size, -1, -1)  # (batch_size, 1, embed_dim)
-        # x = torch.cat((cls_token, x), dim=1)  # (batch_size, num_patches + 1, embed_dim)
-        
-        # # 포지셔널 임베딩 추가
-        # x = x + self.base_model.pos_embed  # (batch_size, num_patches + 1, embed_dim)
-        # x = self.base_model.pos_drop(x)
-        
-        # # 트랜스포머 블록 통과
-        # x = self.base_model.blocks(x)
-        
-        # # LayerNorm 적용
-        # x = self.base_model.norm(x)
-        
-        # # Class token 선택
-        # cls_token_final = x[:, 0] # (batch_size, 1, 768)
-
-        # # Patch token 분리
-        # patch_token = x[:, 1:] # (batch_size, 196, 768)
-        # batch_size, num_patches, embed_dim = patch_token.shape
-        # patch_token = patch_token.view(batch_size, 14, 14, embed_dim) # n, k, k, d
-        # patch_token = patch_token.permute(0, 3, 1, 2) # n, d, k, k
-
-        # # drloc_loss 계산
-        # drloc_loss = dense_relative_localization_loss(patch_token)
-        # drloc_loss *= lambda_
-
-
-        # # Classifier head 적용
-        # x = self.base_model.head(cls_token_final)
         
         x = self.base_model(x) # x: n, k, k, d
 
@@ -152,7 +118,7 @@ class MLP_layer(nn.Module):
 
         return torch.cat(outputs, dim=1), drloc_loss
 
-def create_model(model_name, pretrained, num_classes, in_chans, out_dim):
+def create_model(model_name, pretrained, num_classes, in_chans, out_dim, config):
 
     if out_dim <= 0:
         raise ValueError("오류: out_dim이 0 이하입니다.")

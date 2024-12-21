@@ -182,7 +182,7 @@ class MLP_layer(nn.Module):
         return torch.cat(outputs, dim=1)
 
 
-def create_model(model_name, pretrained, num_classes, in_chans, out_dim):
+def create_model(model_name, pretrained, num_classes, in_chans, out_dim, config):
 
     if out_dim <= 0:
         raise ValueError("오류: out_dim이 0 이하입니다.")
@@ -200,7 +200,7 @@ num_classes = 0
 in_chans = 3
 out_dim = 5
 
-model = create_model(model_name, pretrained, num_classes, in_chans, out_dim)
+model = create_model(model_name, pretrained, num_classes, in_chans, out_dim, config)
 
 print(model)
 
@@ -215,7 +215,7 @@ in_chans = 3
 out_dim = 5
 
 # 모델 생성
-model = create_model(model_name, pretrained, num_classes, in_chans, out_dim)
+model = create_model(model_name, pretrained, num_classes, in_chans, out_dim, config)
 
 # 랜덤 입력 생성 (배치 크기 1, 채널 수 3, 이미지 크기 224x224)
 random_input = torch.randn(1, in_chans, 224, 224)

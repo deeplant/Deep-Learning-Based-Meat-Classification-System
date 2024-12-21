@@ -2,6 +2,24 @@ import pandas as pd
 import numpy as np
 from sklearn.preprocessing import StandardScaler
 
+def read_data(train_csv, val_csv):
+
+    def preprocess_data(df, is_val=False):
+        if 'is_flipped' not in df.columns:
+            df['is_flipped'] = False
+        else:
+            # is_flipped 열이 있는 경우 NaN이면 False, 값이 있으면 True로 설정
+            df['is_flipped'] = df['is_flipped'].apply(lambda x: False if pd.isna(x) else True)
+        
+        return df
+
+    # train과 val 데이터에 전처리 적용
+    train_data = preprocess_data(train_csv)
+    val_data = preprocess_data(val_csv)
+    
+    return train_data, val_data
+
+
 def split_data(csv, output_columns, cross_validation=0, flip_grade='등심3'):
     csv = add_flipped_images_to_dataset(csv, grade=flip_grade)
 

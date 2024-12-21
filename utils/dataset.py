@@ -2,10 +2,11 @@
 
 from torch.utils.data import Dataset
 import torch
-from PIL import Image
+from PIL import Image, ExifTags
 import torchvision.transforms.functional as TF
-from utils.transform import create_transform
 import numpy as np
+
+from utils.transform import create_transform
 
 
 class MeatDataset(Dataset):
@@ -15,6 +16,10 @@ class MeatDataset(Dataset):
         self.is_train = is_train
         self.transforms = self._create_transforms()
 
+
+        if 'SEX' in self.dataframe.columns:
+            self.dataframe['SEX'] = self.dataframe['SEX'].map({'암': 0, '거': 1})
+        
     def __len__(self):
         return len(self.dataframe)
     
@@ -30,6 +35,23 @@ class MeatDataset(Dataset):
     
     def load_image(self, img_path):
         image = Image.open(img_path)
+
+        try:
+            orientation_tag = next((k for k, v in ExifTags.TAGS.items() if v == 'Orientation'), None)
+            exif = image.getexif()
+            if exif and orientation_tag in exif:
+                orientation = exif[orientation_tag]
+                if orientation == 3:
+                    image = image.rotate(180, expand=True)
+                elif orientation == 6:
+                    image = image.rotate(270, expand=True)
+                elif orientation == 8:
+                    image = image.rotate(90, expand=True)
+        except Exception as e:
+            print(f"Error correcting orientation: {e}")
+            # If EXIF data is missing or cannot be processed, proceed without correction
+            pass
+
         if image.mode == 'RGBA':
             return image.convert('RGB')
         return image
@@ -44,13 +66,22 @@ class MeatDataset(Dataset):
                 image = TF.vflip(image)
             
             images.append(np.array(image))
+
+        images = [np.expand_dims(img, axis=-1) if img.ndim == 2 else img for img in images]
         
         # 이미지들을 numpy 배열로 결합 (채널 방향으로)
         combined_image = np.concatenate(images, axis=2)
+
+        if combined_image.shape[2] == 1:  # Grayscale 이미지
+            combined_image = combined_image.squeeze(axis=2)  # (H, W, 1) -> (H, W)
+
         combined_image = Image.fromarray(combined_image)
         
         if transform:
             combined_image = transform(combined_image)
+
+        if combined_image.shape[2] == 1:  # Grayscale 이미지
+            combined_image = combined_image * 2 - 1
         
         return combined_image
 
@@ -75,4 +106,7 @@ class MeatDataset(Dataset):
         labels = [row.get(col, float('nan')) for col in label_columns]
         labels = torch.tensor(labels, dtype=torch.float)
         
-        return final_image, labels
+        # grade 가져오기
+        grade = row.get('grade', None)
+        
+        return final_image, labels, grade

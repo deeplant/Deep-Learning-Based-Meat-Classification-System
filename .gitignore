@@ -1,1 +1,8 @@
 venv3
+
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints/
+
+# Python bytecode cache
+__pycache__/
+*.py[cod]

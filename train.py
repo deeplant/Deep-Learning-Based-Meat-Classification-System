@@ -6,40 +6,28 @@ import torch
 import torch.optim as optim
 import torch.nn as nn
 from torch.optim.lr_scheduler import ReduceLROnPlateau
-from utils.dataset import MeatDataset
 from torch.utils.data import DataLoader
 import random
 import numpy as np
 
 from models.model import make_model
-from utils.split_data import split_data
-from utils.epoch import regression
+from utils.dataset import MeatDataset
+from utils.split_data import split_data, read_data
+from utils.epoch import regression, classification
 from utils.log import log
+from utils.add_param import add_arg, add_param
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 print(device)
 
-argparser=argparse.ArgumentParser(description='training pipeline')
+config_argparser = argparse.ArgumentParser(description='read config')
+config_argparser.add_argument('--config', default="./configs/default_ViT_config.json", type=str, help="Path to config file")
+config_args, remaining_args = config_argparser.parse_known_args()
 
-argparser.add_argument('--experiment', type=str)  # experiment 이름 설정
-argparser.add_argument('--run', type=str)  # run 이름 설정
-argparser.add_argument('--config', default="./configs/default_ViT_config.json", type=str)  # model config 파일 경로 설정
-argparser.add_argument('--save_model', action='store_true')  # 모델 저장
-argparser.add_argument('--epochs', type=int)  #epochs
-argparser.add_argument('--lr', '--learning_rate', type=float)  # learning rate
-argparser.add_argument('--batch_size', type=int)
-argparser.add_argument('--weight_decay', type=float) # Adam의 weight_decay
-argparser.add_argument('--num_workers', type=int) # 서브 프로세스 개수 (cpu 코어 개수) - 기본 4개
-argparser.add_argument('--csv_path', default='./dataset/default.csv') # csv 경로
-argparser.add_argument('--seed', type=int) # 랜덤 시드
-argparser.add_argument('--cross_validation', type=int) # k-fold-cross-validation. 0: 비활성화, 2이상: k-fold 활성화 및 fold 개수 지정
-argparser.add_argument('--port', default=5000, type=int) # 포트 설정
-
-args=argparser.parse_args()
-
-# config 파일을 읽고 기본 값 설정
-with open(args.config, 'r') as json_file:
+with open(config_args.config, 'r') as json_file:
     config = json.load(json_file)
+
+args, train_type = add_arg(config, remaining_args)
 
 experiment = args.experiment if args.experiment is not None else config.get('experiment', 'test')
 run_name = args.run if args.run is not None else config.get('run', 'test')
@@ -54,19 +42,39 @@ cross_validation = args.cross_validation if args.cross_validation is not None el
 factor = config['hyperparameters'].get('factor', 0.3)
 patience = config['hyperparameters'].get('patience', 2)
 port = args.port
+csv_path = args.csv_path
+train_csv_path = args.train_csv
+val_csv_path = args.val_csv
+cla = args.classification
+
+print(f"\ntrain type: {train_type}")
+
+params = add_param(train_type, args)
 
 # 랜덤 시드 설정
 random.seed(seed)
 np.random.seed(seed)
 torch.manual_seed(seed)
 
-# csv 파일 읽기
-csv = pd.read_csv(args.csv_path)
 output_columns = config['output_columns']
-print(output_columns)
 
-# 데이터 분할 (cross_validation의 수 만큼 데이터 분할, cross_validation=0이면 5개로 분할 -> train 4 : val 1)
-fold_data = split_data(csv, output_columns, cross_validation)
+if train_csv_path is None and val_csv_path is None:
+    # csv 파일 읽기
+    csv = pd.read_csv(csv_path)
+    print(output_columns)
+
+    # 데이터 분할 (cross_validation의 수 만큼 데이터 분할, cross_validation=0이면 5개로 분할 -> train 4 : val 1)
+    fold_data = split_data(csv, output_columns, cross_validation)
+
+elif train_csv_path is not None and val_csv_path is not None:
+    train_csv = pd.read_csv(train_csv_path)
+    val_csv = pd.read_csv(val_csv_path)
+
+    train_data, val_data = read_data(train_csv, val_csv)
+
+else:
+    raise ValueError("csv path error")
+
 
 
 # #########################################################################################################################################
@@ -88,7 +96,7 @@ else:
     print("="*50 + "\n")
 
 # 학습 파라미터
-params_train = {
+params.update({
     'num_epochs':epochs,
     'optimizer':None,
     'train_dl':None,
@@ -97,8 +105,8 @@ params_train = {
     'save_model':save_model,
     'loss_func':None,
     'fold':(0, 0),
-    'label_names':output_columns
-}
+    'label_names':output_columns,
+})
 
 all_fold_results = []
 for fold in range(n_folds):
@@ -119,8 +127,16 @@ for fold in range(n_folds):
         mlflow.log_param("weight_decay", weight_decay)    
 
         # train, val 데이터셋
-        val_data = fold_data[fold]
-        train_data = pd.concat([fold_data[i] for i in range(len(fold_data)) if i != fold])
+        if train_csv_path is None and val_csv_path is None:
+            val_data = fold_data[fold]
+            train_data = pd.concat([fold_data[i] for i in range(len(fold_data)) if i != fold])
+            mlflow.log_param("train_csv", csv_path)
+            mlflow.log_param("val_csv", csv_path)
+
+        else:
+            mlflow.log_param("train_csv", train_csv_path)
+            mlflow.log_param("val_csv", val_csv_path)
+            
         val_dataset = MeatDataset(val_data, config, is_train=False)
         train_dataset = MeatDataset(train_data, config, is_train=True)
 
@@ -133,25 +149,31 @@ for fold in range(n_folds):
         mlflow.log_param("total_params", total_params)
 
         # optimizer와 scheduler
-        params_train['optimizer'] = optim.Adam(model.parameters(), lr = lr, weight_decay=weight_decay)
-        params_train['scheduler'] = scheduler = ReduceLROnPlateau(params_train['optimizer'], mode='min', factor=factor, patience=patience, verbose=True)
+        params['optimizer'] = optim.Adam(model.parameters(), lr = lr, weight_decay=weight_decay)
+        params['scheduler'] = scheduler = ReduceLROnPlateau(params['optimizer'], mode='min', factor=factor, patience=patience, verbose=True)
 
         # dataloader
-        params_train['train_dl'] = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, num_workers=num_workers, pin_memory=True)
-        params_train['val_dl'] = DataLoader(val_dataset, batch_size=batch_size, shuffle=False, num_workers=num_workers, pin_memory=True)
+        params['train_dl'] = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, num_workers=num_workers, pin_memory=True)
+        params['val_dl'] = DataLoader(val_dataset, batch_size=batch_size, shuffle=False, num_workers=num_workers, pin_memory=True)
 
         ## loss function
-        params_train['loss_func'] = nn.MSELoss()
+        params['loss_func'] = nn.MSELoss()
+
+        if cla:
+            params['loss_func'] = nn.CrossEntropyLoss()
 
         if cross_validation:
-            params_train['fold'] = (fold + 1, cross_validation)
+            params['fold'] = (fold + 1, cross_validation)
 
         # 학습 진행
-        fold_result = regression(model, params_train)
+        if cla:
+            fold_result = classification(model, params)
+        else:
+            fold_result = regression(model, params)
 
         # fold 결과 저장
         all_fold_results.append(fold_result)
 
         # 마지막 fold일 경우 결과 기록
         if fold + 1 == n_folds:
-            log(all_fold_results, cross_validation, params_train['label_names'])
+            log(all_fold_results, cross_validation, params['label_names'])

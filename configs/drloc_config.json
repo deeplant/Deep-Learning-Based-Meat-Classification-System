@@ -1,4 +1,5 @@
 {
+    "train_type": "drloc",
     "experiment": "01_DRLoc",
     "run": "test_",
     "hyperparameters": {

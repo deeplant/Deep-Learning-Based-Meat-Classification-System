@@ -65,7 +65,7 @@ class MLP_layer(nn.Module):
             nn.Sequential(
                 nn.Linear(self.num_features, 64),  # 차원을 줄인 후에 입력 크기를 맞춥니다
                 nn.ReLU(),
-                nn.Linear(64, 5)  # 타겟 차원 5로 설정
+                nn.Linear(64, 1)  # 타겟 차원 5로 설정
             ) for _ in range(out_dim)
         ])
 
@@ -124,7 +124,7 @@ class MLP_layer(nn.Module):
 
 
 
-def create_model(model_name, pretrained, num_classes, in_chans, out_dim):
+def create_model(model_name, pretrained, num_classes, in_chans, out_dim, config):
     if out_dim <= 0:
         raise ValueError("오류: out_dim이 0 이하입니다.")
 

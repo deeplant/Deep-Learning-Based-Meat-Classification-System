@@ -1,6 +1,5 @@
 import importlib
 import mlflow
-import mlflow.pyfunc
 
 def make_model(config):
 
@@ -17,7 +16,7 @@ def make_model(config):
 
     if not load_model :
         module = importlib.import_module(f'models.{model_file}')
-        model = module.create_model(model_name, pretrained, num_classes, in_chans, out_dim)
+        model = module.create_model(model_name, pretrained, num_classes, in_chans, out_dim, config)
     
     else :
         model_uri = f"models:/{model_name}/{model_version}"

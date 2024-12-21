@@ -166,7 +166,7 @@ class MLP_layer(nn.Module):
 
         return combined_vectors
 
-def create_model(model_name, pretrained, num_classes, in_chans, out_dim):
+def create_model(model_name, pretrained, num_classes, in_chans, out_dim, config):
     if out_dim <= 0:
         raise ValueError("오류: out_dim이 0 이하입니다.")
 
