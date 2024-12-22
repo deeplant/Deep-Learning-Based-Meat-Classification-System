@@ -27,7 +27,7 @@
         "pretrained": true,
         "in_chans": 3,
         "teacher_model": {
-            "name": "resnetv2.101x3",
+            "name": "resnetv2.101x3 1213",
             "version": 1
         }
     },

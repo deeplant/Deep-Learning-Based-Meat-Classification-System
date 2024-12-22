@@ -1,8 +1,21 @@
+# ---
+# jupyter:
+#   jupytext:
+#     text_representation:
+#       extension: .py
+#       format_name: light
+#       format_version: '1.5'
+#       jupytext_version: 1.16.1
+#   kernelspec:
+#     display_name: PyTorch 2.2 (NGC 23.11/Python 3.10) on Backend.AI
+#     language: python
+#     name: python3
+# ---
+
 import timm
 import torch
 import torch.nn as nn
 import math
-
 
 def conv3x3(in_dim, out_dim):
     return torch.nn.Sequential(
@@ -85,76 +98,56 @@ class DAFF(nn.Module):
         out = torch.cat((cls_token, tokens), dim=1)
         return out
 
-
-
-class Attention(nn.Module):
-    def __init__(self, dim, num_heads=8):
-        super().__init__()
-        self.num_heads = num_heads
-        head_dim = dim // num_heads
-        self.scale = head_dim ** -0.5
-        self.qkv = nn.Linear(dim, dim * 3, bias=True)
-        self.proj = nn.Linear(dim, dim)
-        self.act = nn.GELU()
-        self.ht_proj = nn.Linear(head_dim, dim, bias=True)
-        self.ht_norm = nn.LayerNorm(head_dim)
-        self.pos_embed = nn.Parameter(torch.zeros(1, self.num_heads, dim))
-        self.attn_drop = nn.Dropout(p=0.0)  # 원래 모델과 일치하도록 추가
-
-    def forward(self, x):
-        B, N, C = x.shape
-        # head token
-        head_pos = self.pos_embed.expand(x.shape[0], -1, -1)
-        ht = x.reshape(B, -1, self.num_heads, C // self.num_heads).permute(0, 2, 1, 3)
-        ht = ht.mean(dim=2)
-        ht = self.ht_proj(ht).reshape(B, -1, self.num_heads, C // self.num_heads)
-        ht = self.act(self.ht_norm(ht)).flatten(2)
-        ht = ht + head_pos
-        x = torch.cat([x, ht], dim=1)
-        # common MHSA
-        qkv = self.qkv(x).reshape(B, N + self.num_heads, 3, self.num_heads, C // self.num_heads).permute(2, 0, 3, 1, 4)
-        q, k, v = qkv[0], qkv[1], qkv[2]
-        attn = (q @ k.transpose(-2, -1)) * self.scale
-        attn = attn.softmax(dim=-1)
-        attn = self.attn_drop(attn)
-        x = (attn @ v).transpose(1, 2).reshape(B, N + self.num_heads, C)
-        x = self.proj(x)
-        # split, average and add
-        cls, patch, ht = torch.split(x, [1, N-1, self.num_heads], dim=1)
-        cls = cls + torch.mean(ht, dim=1, keepdim=True)
-        x = torch.cat([cls, patch], dim=1)
-        return x
-
 class BaseModel(nn.Module):
     def __init__(self, model_name, pretrained, num_classes, in_chans, embed_layer=SOPE):
         super(BaseModel, self).__init__()
         self.base_model = timm.create_model(model_name=model_name, pretrained=pretrained, num_classes=num_classes, in_chans=in_chans)
-        
-        # SOPE
-        self.base_model.patch_embed = SOPE(patch_size=(16, 16), embed_dim=768)
-        
+
+        # self.base_model.patch_embed = SOPE(patch_size=(16, 16), embed_dim=768)
         for i in range(len(self.base_model.blocks)):
             block = self.base_model.blocks[i]
-
-            # HI-MHSA
-            old_attn = block.attn
-            dim = old_attn.qkv.in_features
-            num_heads = old_attn.num_heads
-
-            block.attn = Attention(dim, num_heads)
-
-            # DAFF
             in_features = block.mlp.fc1.in_features
             hidden_features = block.mlp.fc1.out_features
             out_features = block.mlp.fc2.out_features
 
+            # DAFF 모듈로 교체
             block.mlp = DAFF(in_features, hidden_features, out_features)
         
     def forward(self, x):
-        x = self.base_model(x)
-        return x
+        # 패치 임베딩
+        x = self.base_model.patch_embed(x)
+        # print(f"After patch embedding: {x.shape}")  # (batch_size, num_patches, embed_dim)
 
-    
+        # 클래스 토큰 추가
+        batch_size = x.shape[0]
+        # print("before:", self.base_model.cls_token.shape)
+        cls_token = self.base_model.cls_token.expand(batch_size, -1, -1)  # (batch_size, 1, embed_dim)
+        # print("after:", cls_token.shape)
+        x = torch.cat((cls_token, x), dim=1)  # (batch_size, num_patches + 1, embed_dim)
+        # print(f"After adding class token: {x.shape}")
+        
+        # 포지셔널 임베딩 추가
+        x = x + self.base_model.pos_embed  # (batch_size, num_patches + 1, embed_dim)
+        x = self.base_model.pos_drop(x)
+        # print(f"After positional embedding: {x.shape}")
+        
+        # 트랜스포머 블록 통과
+        x = self.base_model.blocks(x)
+        # print(f"After transformer blocks: {x.shape}")
+        
+        # LayerNorm 적용
+        x = self.base_model.norm(x)
+        # print(f"After norm: {x.shape}")
+        
+        # Class token 선택
+        cls_token_final = x[:, 0]
+        # print(f"After selecting class token: {cls_token_final.shape}")
+        
+        # Classifier head 적용
+        x = self.base_model.head(cls_token_final)
+        # print(f"Final output shape: {x.shape}")
+
+        return x
 
 class MLP_layer(nn.Module):
     def __init__(self, base_model, out_dim):
@@ -176,11 +169,14 @@ class MLP_layer(nn.Module):
     def forward(self, x):
         base_output = self.base_model(x)
         
+        # print("mlp input:", base_output.shape)
+        
         features = base_output
 
         outputs = [head(features) for head in self.mlp_heads]
 
         return torch.cat(outputs, dim=1)
+
 
 def create_model(model_name, pretrained, num_classes, in_chans, out_dim, config):
 
@@ -191,3 +187,25 @@ def create_model(model_name, pretrained, num_classes, in_chans, out_dim, config)
     model = MLP_layer(base_model, out_dim)
 
     return model
+
+# 모델을 생성
+model_name = 'vit_base_r50_s16_224'
+pretrained = True
+num_classes = 0
+in_chans = 3
+out_dim = 5
+
+# +
+# 모델 생성
+# model = create_model(model_name, pretrained, num_classes, in_chans, out_dim)
+
+# +
+# 랜덤 입력 생성 (배치 크기 1, 채널 수 3, 이미지 크기 224x224)
+# random_input = torch.randn(1, in_chans, 224, 224)
+
+# +
+# 모델에 랜덤 입력을 넣어 출력 확인
+# output = model(random_input)
+# -
+
+# print("Output shape:", output.shape)  # 출력의 크기 확인

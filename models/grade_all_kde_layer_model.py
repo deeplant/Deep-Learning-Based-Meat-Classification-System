@@ -27,20 +27,23 @@ class MLP_layer(nn.Module):
 
         self.num_features = self.base_model.base_model.num_features  # 768
 
-        # KDE 레이어: 각 라벨별로 128 → 96 변환
+        # KDE 레이어: 각 라벨별로 128 → 256 -> 64 변환
         self.kde_transforms = nn.ModuleList([
             nn.Sequential(
-                nn.Linear(128, 96),  # 128 → 96
+                nn.Linear(128, 256),  # 128 → 256
                 nn.ReLU(),
-                nn.Dropout(p=0.35)
+                nn.Dropout(p=0.3),
+                nn.Linear(256, 64),
+                nn.ReLU(),
+                nn.Dropout(p=0.3)
             ) for _ in range(out_dim)
         ])
 
         # 최종 결합 레이어: 64 * out_dim → 256
         self.kde_combination_layer = nn.Sequential(
-            nn.Linear(96 * out_dim, 256),  # 96 * out_dim → 256
+            nn.Linear(64 * out_dim, 256),  # 64 * out_dim → 256
             nn.ReLU(),
-            nn.Dropout(p=0.35)
+            nn.Dropout(p=0.3)
         )
 
         # 최종 MLP 헤드: (768 + 256) → 1
@@ -96,7 +99,7 @@ def create_model(model_name, pretrained, num_classes, in_chans, out_dim, config)
     if out_dim <= 0:
         raise ValueError("오류: out_dim이 0 이하입니다.")
 
-    kde_path = 'dataset/ku_kde1211_norm'
+    kde_path = 'dataset/ku_kde2_grade_norm'
     kde_labels = ['Marbling', 'Color', 'Texture', 'Surface_Moisture', 'Total']
 
     if len(kde_labels) != out_dim:

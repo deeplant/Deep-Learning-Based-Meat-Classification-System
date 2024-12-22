@@ -97,7 +97,7 @@ class DAFF(nn.Module):
         tokens = x.flatten(2).permute(0, 2, 1)
         out = torch.cat((cls_token, tokens), dim=1)
         return out
-    
+
 class BaseModel(nn.Module):
     def __init__(self, model_name, pretrained, num_classes, in_chans, embed_layer=SOPE):
         super(BaseModel, self).__init__()

@@ -75,8 +75,8 @@ def create_model(model_name, pretrained, num_classes, in_chans, out_dim, config)
     if out_dim <= 0:
         raise ValueError("오류: out_dim이 0 이하입니다.")
 
-    kde_path = 'dataset/ku_kde1211_norm'
-    kde_label = 'Marbling'
+    kde_path = 'dataset/ku_kde_norm_1213'
+    kde_label = 'Color'
 
     base_model = BaseModel(model_name, pretrained, num_classes, in_chans)
     model = MLP_layer(base_model, out_dim=out_dim, kde_path=kde_path, custom_str=kde_label)
