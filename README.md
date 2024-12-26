@@ -11,6 +11,8 @@ Deeplant
 ---------
 <img width="231" alt="스크린샷 2024-08-21 오후 5 02 04" src="https://github.com/user-attachments/assets/b9d6c397-0f6f-48d4-817f-843c5509abfd">
 
+마블링, 육색, 조직감, 표면육즙, 기호도 5가지 값에 대한 Regression Task
+
 
 Installation
 -----
@@ -50,8 +52,14 @@ Create Custom Loss
 ---
 'utils/step.py'에 custom loss 코드 작성 권장.
 
+결과 및 성능
+---
+![image](https://github.com/user-attachments/assets/60b3698e-8dba-42dc-a85a-91b34b322841)
+2330개의 데이터 학습 기준
 
+acc 05: 모델의 예측값이 정답의 +-0.5 이내일 경우 정답으로 처리한 정확도
 
+acc 10: 모델의 예측값이 정답의 +-1.0 이내일 경우 정답으로 처리한 정확도
 
 
 
