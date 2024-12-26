@@ -37,10 +37,8 @@ Create Custom Model
 ---
 기본적인 pytorch 모델 제작법과 같다. pytorch 모델 제작법은 공식 document 참고.
 
-'ml_training/models' 폴더에 custom model code를 적을 .py 파일 생성.
+'models/' 폴더에 custom model code를 적을 .py 파일 생성.
 pytorch 기반의 모델 클래스 제작.
-모델 클래스의 forward 부분에 들어오는 입력 값이 list이므로 이 부분을 주의해서 코드 작성.
-클래스 안에 getAlgorithm 함수 추가. classification or regression 리턴.
 제작한 class를 return 하는 외부에서 접근 가능한 create_model() 함수 추가.
 
 Configuration file 작성
@@ -50,7 +48,7 @@ Configuration file 작성
 
 Create Custom Loss
 ---
-'ml_training/loss/loss.py'에 custom loss 코드 작성 권장.
+'utils/step.py'에 custom loss 코드 작성 권장.
 
 
 
